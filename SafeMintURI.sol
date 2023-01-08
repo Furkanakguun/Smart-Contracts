@@ -50,3 +50,6 @@ contract HETCOTEST3 is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
             _setTokenURI(mintIndex,_uri);
     }
 }
+
+// The Example Of JSON Format for URI
+//https://www.jsonkeeper.com/b/WF44
