@@ -13,7 +13,7 @@ contract HETCOTEST3 is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable ,Reen
 
     //attributes
     // Standart for ERC721
-    uint public constant mintPrice = 0;
+  
     bool public publicSaleActive;
     address public operator;
     //Mapping for holding which address mint how much dimenzia ?
@@ -53,6 +53,12 @@ contract HETCOTEST3 is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable ,Reen
         publicSaleActive = false;
     }
 
+       function startPublicSale() external onlyOwner {
+        //emit LandPublicSaleStop(getMintPrice(), getElapsedSaleTime());
+        publicSaleActive = true;
+    }
+
+
   
     constructor() ERC721("HETCOTEST3", "HTCTST3") {
 
@@ -61,11 +67,11 @@ contract HETCOTEST3 is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable ,Reen
 
     }
 
-    function mint(address to, uint256 tokenId , string memory _uri) public payable whenPublicSaleActive nonReentrant {
+    function mint(address to, uint256 tokenId , string memory _uri , uint mintPrice) public payable whenPublicSaleActive nonReentrant {
             //uint256 mintIndex = totalSupply();
-            
+            require(mintPrice <= msg.value , " Ether value sent is not correct");
             //Check for minted addres has more than max mint per address
-            require(mintedPerAddress[msg.sender] > MAX_MINT_PER_ADDRESS, "sender address cannot mint more than maxMintPerAddress");
+            //require(mintedPerAddress[msg.sender] > MAX_MINT_PER_ADDRESS, "sender address cannot mint more than maxMintPerAddress");
             mintedPerAddress[msg.sender] += 1;
             _safeMint(to , tokenId);
             _setTokenURI(tokenId , _uri);
