@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -10,7 +10,14 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-contract HetcoTestVoucher is ERC721, ERC721URIStorage, Ownable, EIP712,  ReentrancyGuard {
+contract HetcoTestVoucher is
+    ERC721,
+    ERC721Enumerable,
+    ERC721URIStorage,
+    Ownable,
+    EIP712,
+    ReentrancyGuard
+{
     string private constant SIGNING_DOMAIN = "Voucher-Domain";
     string private constant SIGNATURE_VERSION = "1";
     address public minter;
@@ -18,23 +25,16 @@ contract HetcoTestVoucher is ERC721, ERC721URIStorage, Ownable, EIP712,  Reentra
     //attributes
     // Standart for ERC721
     bool public publicSaleActive;
-    address public operator;
     uint256 public publicSaleStartTime;
     //Mapping for holding which address mint how much dimenzia ?
     mapping(address => uint256) public mintedPerAddress;
 
     // constants
     uint256 public constant MAX_DIMENZIA = 18000;
-    uint256 public constant MAX_MINT_PER_ADDRESS = 10;
-    uint256 public constant MINT_PRICE = 0.002 ether;
+
     // modifiers
     modifier whenPublicSaleActive() {
         require(publicSaleActive, "Public sale is not active");
-        _;
-    }
-
-    modifier onlyOperator() {
-        require(operator == msg.sender, "Only operator can call this method");
         _;
     }
 
@@ -43,21 +43,22 @@ contract HetcoTestVoucher is ERC721, ERC721URIStorage, Ownable, EIP712,  Reentra
 
     event DimenziaPublicSaleStop(uint256 indexed _timeElapsed);
 
-    function setOperator(address _operator) external onlyOwner {
-        operator = _operator;
-    }
+   
 
     function getElapsedSaleTime() private view returns (uint256) {
         return
             publicSaleStartTime > 0 ? block.timestamp - publicSaleStartTime : 0;
     }
 
-    function stopPublicSale() external onlyOperator whenPublicSaleActive {
-        emit DimenziaPublicSaleStop(getElapsedSaleTime());
-        publicSaleActive = false;                                                                                                     
+    function startPublicSale() external onlyOwner {
         publicSaleStartTime = block.timestamp;
         emit DimenziaPublicSaleStart(publicSaleStartTime);
         publicSaleActive = true;
+    }
+
+    function stopPublicSale() external onlyOwner whenPublicSaleActive {
+        emit DimenziaPublicSaleStop(getElapsedSaleTime());
+        publicSaleActive = false;
     }
 
     function withdraw() external onlyOwner {
@@ -100,18 +101,34 @@ contract HetcoTestVoucher is ERC721, ERC721URIStorage, Ownable, EIP712,  Reentra
         return signer;
     }
 
-    function safeMint(Voucher calldata voucher) public payable whenPublicSaleActive nonReentrant {
+    function safeMint(Voucher calldata voucher)
+        public
+        payable
+        whenPublicSaleActive
+        nonReentrant
+    {
+        uint256 mintIndex = totalSupply();
+        require(mintIndex < MAX_DIMENZIA, " All Dimenzia are already sold");
         require(minter == recover(voucher), "Wrong signature.");
         require(
             msg.sender == voucher.buyer,
             "This NFT is not assigned for you"
         );
         require(msg.value >= voucher.price, "Not enough ether sent.");
+        mintedPerAddress[msg.sender] += 1;
         _safeMint(voucher.buyer, voucher.tokenId);
         _setTokenURI(voucher.tokenId, voucher.uri);
     }
 
     // The following functions are overrides required by Solidity.
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
 
     function _burn(uint256 tokenId)
         internal
@@ -127,5 +144,14 @@ contract HetcoTestVoucher is ERC721, ERC721URIStorage, Ownable, EIP712,  Reentra
         returns (string memory)
     {
         return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
