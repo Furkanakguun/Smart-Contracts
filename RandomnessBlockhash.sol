@@ -26,3 +26,14 @@ contract RandomnessBlockhash {
 // customize it further to suit your specific use case.
 // Additionally, you would need to deploy the contract to the Ethereum network 
 // using a tool such as Remix or Truffle in order to use it in practice.
+
+function getRandomNumberNextBlock() public returns (bool) {
+    uint256 randomNumber = uint256(keccak256(abi.encodePacked(blockhash(block.number + 1), msg.sender, nonce)));
+    nonce++;
+    return (randomNumber % 2 == 0);
+}
+
+
+// Yes, it's possible to wait for the next block and use its hash for generating randomness, 
+// but it's generally not recommended since it would require waiting for an additional block to be mined,
+// which could introduce additional delays and increase gas costs.
