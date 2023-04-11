@@ -28,7 +28,7 @@ contract CoinFlip is ReentrancyGuard , Ownable{
         require(msg.value >= MIN_BET, "Bet amount should be greater than or equal to 0.01 ether");
         require(_balances[msg.sender] == 0, "Finish your previous game");
         
-        uint256 seed = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, blockhash(block.number + 1), address(this).balance, msg.sender)));
+        uint256 seed = uint256(keccak256(abi.encodePacked(block.timestamp, blockhash(block.number + 1), address(this).balance, msg.sender)));
         
         bool outcome = uint256(keccak256(abi.encodePacked(seed, choice))) % 2 == 0;
         
