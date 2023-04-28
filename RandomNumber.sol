@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-
 import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RandomNumber is RrpRequesterV0, Ownable{
-    
-    struct Number{
-      uint256 rand;
-    }
-
-    RandomNumber[] public numbers;
-
     address public airnode;
     bytes32 public endpointIdUint256;
     address public sponsorwallet;
@@ -20,7 +12,7 @@ contract RandomNumber is RrpRequesterV0, Ownable{
     mapping (bytes32 => bool) public expectingRequestWithIdToBeFullfilled;
 
 
-    mapping (bytes32 => address) requestToSender;
+    mapping (bytes32 => address payable ) requestToSender;
     mapping (bytes32 => uint256) requestToTokenId;
 
     constructor(address _airnodeRrp) RrpRequesterV0(_airnodeRrp) {}
@@ -38,7 +30,8 @@ contract RandomNumber is RrpRequesterV0, Ownable{
 
 
 
-    function RequestNewRandomNumber() public returns (bytes32) {
+function RequestNewRandomNumber() public payable returns (bytes32) {
+        require(msg.value >= 0.01 ether, "Not enough money!");
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256,
@@ -49,7 +42,7 @@ contract RandomNumber is RrpRequesterV0, Ownable{
             ""
         );
         expectingRequestWithIdToBeFullfilled[requestId] = true;
-        requestToSender[requestId] = msg.sender;
+        requestToSender[requestId] = payable (msg.sender);
         return requestId;
     }
 
@@ -64,11 +57,8 @@ contract RandomNumber is RrpRequesterV0, Ownable{
         );
         expectingRequestWithIdToBeFullfilled[requestId] = false;
         uint256 qrngUint256 = abi.decode(data, (uint256));
-        uint256 _deneme = (qrngUint256 % 100);
-
-        deneme = _deneme;
-
+        uint256 _deneme = (qrngUint256 % 2);
+        require(_deneme == 1, "You lost!");
+        requestToSender[requestId].transfer(0.02 ether);
     }
-
-
 }
